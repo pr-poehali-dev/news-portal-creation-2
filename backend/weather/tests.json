@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "Get weather for Moscow",
+      "method": "GET",
+      "path": "/?city=Moscow",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "city": "string",
+        "temperature": "number",
+        "description": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Handle OPTIONS request",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

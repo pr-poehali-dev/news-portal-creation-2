@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,33 @@ import { Input } from '@/components/ui/input';
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState('all');
+  const [weather, setWeather] = useState<any>(null);
+  const [selectedCity, setSelectedCity] = useState('Moscow');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(true);
+
+  const russianCities = [
+    'Moscow', 'Saint Petersburg', 'Novosibirsk', 'Yekaterinburg',
+    'Kazan', 'Nizhny Novgorod', 'Chelyabinsk', 'Samara', 'Omsk', 'Rostov-on-Don'
+  ];
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      setIsLoadingWeather(true);
+      try {
+        const response = await fetch(`https://functions.poehali.dev/de810bca-7f46-4d7a-a1a6-5456ee010c15?city=${selectedCity}`);
+        if (response.ok) {
+          const data = await response.json();
+          setWeather(data);
+        }
+      } catch (error) {
+        console.error('Weather fetch error:', error);
+      } finally {
+        setIsLoadingWeather(false);
+      }
+    };
+    fetchWeather();
+  }, [selectedCity]);
 
   const newsCategories = [
     { id: 'politics', label: 'Политика', icon: 'Landmark' },
@@ -34,29 +61,58 @@ const Index = () => {
     { name: 'Водолей', icon: '♒' }, { name: 'Рыбы', icon: '♓' },
   ];
 
-  const topNews = [
+  const allNews = [
     {
       id: 1,
       title: 'Президент подписал важный закон о развитии экономики',
-      category: 'Политика',
+      category: 'politics',
+      categoryLabel: 'Политика',
       time: '2 часа назад',
       image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400'
     },
     {
       id: 2,
       title: 'Центробанк снизил ключевую ставку: что это значит для экономики',
-      category: 'Экономика',
+      category: 'economy',
+      categoryLabel: 'Экономика',
       time: '4 часа назад',
       image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400'
     },
     {
       id: 3,
       title: 'Российские стартапы привлекли рекордные инвестиции',
-      category: 'Бизнес',
+      category: 'business',
+      categoryLabel: 'Бизнес',
       time: '6 часов назад',
       image: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=400'
+    },
+    {
+      id: 4,
+      title: 'Новые тренды в макияже: что будет популярно этой осенью',
+      category: 'beauty',
+      categoryLabel: 'Красота',
+      time: '8 часов назад',
+      image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400'
+    },
+    {
+      id: 5,
+      title: 'Главные модные показы недели: обзор коллекций',
+      category: 'fashion',
+      categoryLabel: 'Мода',
+      time: '10 часов назад',
+      image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400'
+    },
+    {
+      id: 6,
+      title: 'Черная пятница началась: лучшие скидки на электронику',
+      category: 'sale',
+      categoryLabel: 'Продажа',
+      time: '12 часов назад',
+      image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400'
     }
   ];
+
+  const filteredNews = activeCategory === 'all' ? allNews : allNews.filter(news => news.category === activeCategory);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-muted/30 to-background">
@@ -86,12 +142,38 @@ const Index = () => {
                 />
                 <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
               </div>
-              <Button size="icon" variant="ghost" className="md:hidden">
-                <Icon name="Menu" size={24} />
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="md:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                <Icon name={mobileMenuOpen ? "X" : "Menu"} size={24} />
               </Button>
             </div>
           </div>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-b animate-fade-in">
+            <nav className="container mx-auto px-4 py-4 flex flex-col gap-3">
+              <a href="#news" className="text-sm font-medium hover:text-primary transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Новости</a>
+              <a href="#articles" className="text-sm font-medium hover:text-primary transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Статьи</a>
+              <a href="#press" className="text-sm font-medium hover:text-primary transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Пресс-релизы</a>
+              <a href="#horoscope" className="text-sm font-medium hover:text-primary transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Гороскопы</a>
+              <a href="#weather" className="text-sm font-medium hover:text-primary transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Погода</a>
+              <a href="#blogs" className="text-sm font-medium hover:text-primary transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Блоги</a>
+              <a href="#bio" className="text-sm font-medium hover:text-primary transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Биографии</a>
+              <div className="relative pt-2">
+                <Input 
+                  placeholder="Поиск новостей..." 
+                  className="w-full pl-10"
+                />
+                <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              </div>
+            </nav>
+          </div>
+        )}
 
         <div className="bg-muted/50 border-t">
           <div className="container mx-auto px-4 py-3">
@@ -125,7 +207,7 @@ const Index = () => {
               </div>
 
               <div className="grid gap-6">
-                {topNews.map((news, idx) => (
+                {filteredNews.map((news, idx) => (
                   <Card key={news.id} className="overflow-hidden hover:shadow-lg transition-shadow animate-fade-in" style={{ animationDelay: `${idx * 0.1}s` }}>
                     <div className="grid md:grid-cols-3 gap-4">
                       <div className="md:col-span-1 h-48 md:h-auto">
@@ -137,7 +219,7 @@ const Index = () => {
                       </div>
                       <div className="md:col-span-2 p-6">
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary">{news.category}</Badge>
+                          <Badge variant="secondary">{news.categoryLabel}</Badge>
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Icon name="Clock" size={12} />
                             {news.time}
@@ -257,24 +339,38 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold">Москва</h4>
-                      <p className="text-sm text-muted-foreground">Облачно</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold">+8°</p>
-                    </div>
+                  <div className="mb-3">
+                    <select 
+                      value={selectedCity} 
+                      onChange={(e) => setSelectedCity(e.target.value)}
+                      className="w-full p-2 border rounded-md text-sm"
+                    >
+                      {russianCities.map(city => (
+                        <option key={city} value={city}>{city === 'Moscow' ? 'Москва' : city === 'Saint Petersburg' ? 'Санкт-Петербург' : city}</option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 pt-3 border-t">
-                    {['Пн', 'Вт', 'Ср', 'Чт'].map((day, i) => (
-                      <div key={day} className="text-center">
-                        <p className="text-xs text-muted-foreground mb-1">{day}</p>
-                        <Icon name="Cloud" size={20} className="mx-auto text-muted-foreground" />
-                        <p className="text-sm font-medium mt-1">+{7 + i}°</p>
+                  {isLoadingWeather ? (
+                    <div className="text-center py-8">
+                      <Icon name="Loader2" className="animate-spin mx-auto text-primary" size={32} />
+                    </div>
+                  ) : weather ? (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold">{weather.city}</h4>
+                        <p className="text-sm text-muted-foreground">{weather.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Влажность: {weather.humidity}%</p>
                       </div>
-                    ))}
-                  </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold">{weather.temperature > 0 ? '+' : ''}{weather.temperature}°</p>
+                        <p className="text-xs text-muted-foreground">Ощущается: {weather.feels_like > 0 ? '+' : ''}{weather.feels_like}°</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-sm text-muted-foreground py-4">
+                      Не удалось загрузить погоду
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
