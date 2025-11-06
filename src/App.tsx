@@ -20,6 +20,11 @@ import AdminBiographies from "./pages/AdminBiographies";
 import AdminBiographiesEdit from "./pages/AdminBiographiesEdit";
 import Login from "./pages/Login";
 import NewsDetail from "./pages/NewsDetail";
+import ArticleDetail from "./pages/ArticleDetail";
+import PressReleaseDetail from "./pages/PressReleaseDetail";
+import HoroscopeDetail from "./pages/HoroscopeDetail";
+import BlogDetail from "./pages/BlogDetail";
+import BiographyDetail from "./pages/BiographyDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +38,11 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/news/:id" element={<NewsDetail />} />
+          <Route path="/articles/:id" element={<ArticleDetail />} />
+          <Route path="/press-releases/:id" element={<PressReleaseDetail />} />
+          <Route path="/horoscopes/:id" element={<HoroscopeDetail />} />
+          <Route path="/blogs/:id" element={<BlogDetail />} />
+          <Route path="/biographies/:id" element={<BiographyDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/news" element={<AdminNews />} />
