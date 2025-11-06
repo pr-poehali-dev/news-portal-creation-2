@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import RichTextEditor from '@/components/RichTextEditor';
+import AdvancedRichTextEditor from '@/components/AdvancedRichTextEditor';
 import Icon from '@/components/ui/icon';
 
 interface NewsForm {
@@ -56,12 +56,17 @@ const MainTab = ({ form, setForm }: MainTabProps) => {
         </div>
 
         <div>
-          <Label>Текст (до 10000 символов, до 20 картинок)</Label>
-          <RichTextEditor
+          <Label>Расширенное описание новости (до 20000 символов)</Label>
+          <p className="text-sm text-muted-foreground mb-2">
+            Доступно: разные шрифты и размеры, цвета текста и фона, заголовки, подзаголовки, 
+            жирный, курсив, подчеркнутый, зачеркнутый, подстрочный текст, кавычки, отступы, 
+            загрузка изображений и видео с компьютера
+          </p>
+          <AdvancedRichTextEditor
             value={form.text}
             onChange={(value) => setForm({ ...form, text: value })}
-            placeholder="Введите текст новости..."
-            maxLength={10000}
+            placeholder="Введите подробное описание новости с форматированием..."
+            maxLength={20000}
           />
         </div>
 

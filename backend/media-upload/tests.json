@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "Test OPTIONS request for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Test image upload",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "file": "base64encodeddata",
+        "type": "image"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "url": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
