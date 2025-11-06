@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import NewsSection from '@/components/NewsSection';
 import Sidebar from '@/components/Sidebar';
 import Footer from '@/components/Footer';
+import AdBlock from '@/components/AdBlock';
 import Icon from '@/components/ui/icon';
 
 const API_URL = 'https://functions.poehali.dev/d0b4ea43-ed3e-4e1c-9d9f-851adbff0718';
@@ -97,9 +98,18 @@ const Index = () => {
         setActiveCategory={setActiveCategory}
       />
 
+      <div className="flex justify-center bg-gray-50 py-4">
+        <AdBlock blockId="R-A-XXXXXX-1" format="top" />
+      </div>
+
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <NewsSection 
+          <div className="hidden lg:block lg:col-span-2">
+            <AdBlock blockId="R-A-XXXXXX-2" format="sidebar-left" />
+          </div>
+          
+          <div className="lg:col-span-8">
+            <NewsSection 
             filteredNews={filteredNews}
             articleCategories={articleCategories}
             articles={articles}
@@ -108,24 +118,17 @@ const Index = () => {
             blogs={blogs}
             biographies={biographies}
           />
+          </div>
           
-          <Sidebar />
+          <div className="lg:col-span-2 space-y-6">
+            <Sidebar />
+            <div className="hidden lg:block">
+              <AdBlock blockId="R-A-XXXXXX-3" format="sidebar-right" />
+            </div>
+          </div>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg p-8 text-white animate-fade-in">
-            <h3 className="text-xl font-semibold mb-2">Баннер 468x60</h3>
-            <p className="text-sm opacity-90">Горизонтальный баннер</p>
-          </div>
-          <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-lg p-8 text-white animate-fade-in">
-            <h3 className="text-xl font-semibold mb-2">Баннер 468x60</h3>
-            <p className="text-sm opacity-90">Горизонтальный баннер</p>
-          </div>
-          <div className="bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg p-8 text-white animate-fade-in">
-            <h3 className="text-xl font-semibold mb-2">Баннер 468x60</h3>
-            <p className="text-sm opacity-90">Горизонтальный баннер</p>
-          </div>
-        </div>
+
       </main>
 
       <Footer />

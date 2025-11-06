@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/AdminSidebar';
+import AIContentGenerator from '@/components/AIContentGenerator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -108,10 +109,19 @@ const AdminContent = () => {
       <div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">{title}</h2>
-          <Button onClick={() => handleCreate(resource)}>
-            <Icon name="Plus" size={18} className="mr-2" />
-            Добавить {title.toLowerCase()}
-          </Button>
+          <div className="flex gap-2">
+            <AIContentGenerator 
+              onContentGenerated={(content) => {
+                console.log('Generated content:', content);
+                toast.success('Контент сгенерирован! Открываю редактор...');
+                handleCreate(resource);
+              }}
+            />
+            <Button onClick={() => handleCreate(resource)}>
+              <Icon name="Plus" size={18} className="mr-2" />
+              Добавить {title.toLowerCase()}
+            </Button>
+          </div>
         </div>
 
         <Card>

@@ -1,0 +1,24 @@
+{
+  "tests": [
+    {
+      "name": "Generate news content",
+      "method": "POST",
+      "body": {
+        "prompt": "Запуск новой ракеты SpaceX",
+        "contentType": "news"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "title": "string",
+        "description": "string",
+        "content": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Handle OPTIONS request",
+      "method": "OPTIONS",
+      "expectedStatus": 200
+    }
+  ]
+}

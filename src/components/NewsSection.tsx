@@ -26,7 +26,7 @@ interface NewsSectionProps {
 
 const NewsSection = ({ filteredNews, articleCategories, articles = [], pressReleases = [], horoscopes = [], blogs = [], biographies = [] }: NewsSectionProps) => {
   return (
-    <div className="lg:col-span-8 space-y-6">
+    <div className="space-y-6">
       <section className="animate-fade-in">
         <div className="bg-primary/5 rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
