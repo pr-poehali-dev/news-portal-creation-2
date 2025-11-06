@@ -11,6 +11,11 @@ const Index = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [newsCategories, setNewsCategories] = useState<Array<{ id: string; label: string; icon: string }>>([]);
   const [allNews, setAllNews] = useState<any[]>([]);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [pressReleases, setPressReleases] = useState<any[]>([]);
+  const [horoscopes, setHoroscopes] = useState<any[]>([]);
+  const [blogs, setBlogs] = useState<any[]>([]);
+  const [biographies, setBiographies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const articleCategories = [
@@ -26,12 +31,23 @@ const Index = () => {
 
   const loadData = async () => {
     try {
-      const [newsRes, categoriesRes] = await Promise.all([
+      const [newsRes, categoriesRes, articlesRes, pressRes, horoscopesRes, blogsRes, biographiesRes] = await Promise.all([
         fetch(`${API_URL}?resource=news`),
-        fetch(`${API_URL}?resource=categories`)
+        fetch(`${API_URL}?resource=categories`),
+        fetch(`${API_URL}?resource=articles`),
+        fetch(`${API_URL}?resource=press-releases`),
+        fetch(`${API_URL}?resource=horoscopes`),
+        fetch(`${API_URL}?resource=blogs`),
+        fetch(`${API_URL}?resource=biographies`)
       ]);
+      
       const newsData = await newsRes.json();
       const categoriesData = await categoriesRes.json();
+      const articlesData = await articlesRes.json();
+      const pressData = await pressRes.json();
+      const horoscopesData = await horoscopesRes.json();
+      const blogsData = await blogsRes.json();
+      const biographiesData = await biographiesRes.json();
       
       const formattedCategories = categoriesData.map((cat: any) => ({
         id: cat.code,
@@ -51,6 +67,11 @@ const Index = () => {
       
       setNewsCategories(formattedCategories);
       setAllNews(formattedNews);
+      setArticles(articlesData);
+      setPressReleases(pressData);
+      setHoroscopes(horoscopesData);
+      setBlogs(blogsData);
+      setBiographies(biographiesData);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -81,6 +102,11 @@ const Index = () => {
           <NewsSection 
             filteredNews={filteredNews}
             articleCategories={articleCategories}
+            articles={articles}
+            pressReleases={pressReleases}
+            horoscopes={horoscopes}
+            blogs={blogs}
+            biographies={biographies}
           />
           
           <Sidebar />

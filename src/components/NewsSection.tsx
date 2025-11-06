@@ -17,9 +17,14 @@ interface NewsItem {
 interface NewsSectionProps {
   filteredNews: NewsItem[];
   articleCategories: string[];
+  articles: any[];
+  pressReleases: any[];
+  horoscopes: any[];
+  blogs: any[];
+  biographies: any[];
 }
 
-const NewsSection = ({ filteredNews, articleCategories }: NewsSectionProps) => {
+const NewsSection = ({ filteredNews, articleCategories, articles, pressReleases, horoscopes, blogs, biographies }: NewsSectionProps) => {
   return (
     <div className="lg:col-span-8 space-y-6">
       <section className="animate-fade-in">
@@ -70,21 +75,33 @@ const NewsSection = ({ filteredNews, articleCategories }: NewsSectionProps) => {
       <section id="articles" className="animate-fade-in mt-12">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Icon name="FileText" className="text-primary" />
-              Статьи по темам
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="FileText" className="text-primary" />
+                Статьи
+              </div>
+              <Badge variant="secondary">{articles.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {articleCategories.map((cat) => (
-                <Badge 
-                  key={cat} 
-                  variant="outline" 
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                >
-                  {cat}
-                </Badge>
+            <div className="space-y-3">
+              {articles.slice(0, 5).map((article) => (
+                <Link key={article.id} to={`/articles/${article.id}`} target="_blank" rel="noopener noreferrer">
+                  <div className="flex gap-4 p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer">
+                    {article.image_url && (
+                      <img 
+                        src={article.image_url} 
+                        alt={article.title}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h4 className="font-medium hover:text-primary transition-colors">{article.title}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">{article.time_label}</p>
+                    </div>
+                    <Icon name="ExternalLink" size={20} className="text-muted-foreground" />
+                  </div>
+                </Link>
               ))}
             </div>
           </CardContent>
@@ -94,34 +111,143 @@ const NewsSection = ({ filteredNews, articleCategories }: NewsSectionProps) => {
       <section id="press" className="animate-fade-in mt-8">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Icon name="Megaphone" className="text-primary" />
-              Пресс-релизы
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="Megaphone" className="text-primary" />
+                Пресс-релизы
+              </div>
+              <Badge variant="secondary">{pressReleases.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="corporate">
-              <TabsList className="grid grid-cols-3 lg:grid-cols-5">
-                <TabsTrigger value="corporate">Корпоративные</TabsTrigger>
-                <TabsTrigger value="announcements">Объявления</TabsTrigger>
-                <TabsTrigger value="events">События</TabsTrigger>
-                <TabsTrigger value="products">Новинки</TabsTrigger>
-                <TabsTrigger value="partners">Партнерства</TabsTrigger>
-              </TabsList>
-              <TabsContent value="corporate" className="mt-4">
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex justify-between items-start p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer">
-                      <div>
-                        <h4 className="font-medium">Компания объявила о запуске нового продукта</h4>
-                        <p className="text-sm text-muted-foreground">31 октября 2025</p>
-                      </div>
-                      <Icon name="ChevronRight" size={20} className="text-muted-foreground" />
+            <div className="space-y-3">
+              {pressReleases.slice(0, 5).map((press) => (
+                <Link key={press.id} to={`/press-releases/${press.id}`} target="_blank" rel="noopener noreferrer">
+                  <div className="flex gap-4 p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer">
+                    {press.image_url && (
+                      <img 
+                        src={press.image_url} 
+                        alt={press.title}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h4 className="font-medium hover:text-primary transition-colors">{press.title}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">{press.time_label}</p>
                     </div>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
+                    <Icon name="ExternalLink" size={20} className="text-muted-foreground" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section id="horoscopes" className="animate-fade-in mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="Star" className="text-primary" />
+                Гороскопы
+              </div>
+              <Badge variant="secondary">{horoscopes.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {horoscopes.slice(0, 5).map((horoscope) => (
+                <Link key={horoscope.id} to={`/horoscopes/${horoscope.id}`} target="_blank" rel="noopener noreferrer">
+                  <div className="flex gap-4 p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer">
+                    {horoscope.image_url && (
+                      <img 
+                        src={horoscope.image_url} 
+                        alt={horoscope.title}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h4 className="font-medium hover:text-primary transition-colors">{horoscope.title}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">{horoscope.time_label}</p>
+                    </div>
+                    <Icon name="ExternalLink" size={20} className="text-muted-foreground" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section id="blogs" className="animate-fade-in mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="BookOpen" className="text-primary" />
+                Блоги
+              </div>
+              <Badge variant="secondary">{blogs.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {blogs.slice(0, 5).map((blog) => (
+                <Link key={blog.id} to={`/blogs/${blog.id}`} target="_blank" rel="noopener noreferrer">
+                  <div className="flex gap-4 p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer">
+                    {blog.image_url && (
+                      <img 
+                        src={blog.image_url} 
+                        alt={blog.title}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h4 className="font-medium hover:text-primary transition-colors">{blog.title}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">{blog.time_label}</p>
+                    </div>
+                    <Icon name="ExternalLink" size={20} className="text-muted-foreground" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section id="biographies" className="animate-fade-in mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="Users" className="text-primary" />
+                Биографии
+              </div>
+              <Badge variant="secondary">{biographies.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {biographies.slice(0, 5).map((biography) => (
+                <Link key={biography.id} to={`/biographies/${biography.id}`} target="_blank" rel="noopener noreferrer">
+                  <div className="flex gap-4 p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer">
+                    {biography.image_url && (
+                      <img 
+                        src={biography.image_url} 
+                        alt={biography.title}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h4 className="font-medium hover:text-primary transition-colors">{biography.title}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">{biography.time_label}</p>
+                    </div>
+                    <Icon name="ExternalLink" size={20} className="text-muted-foreground" />
+                  </div>
+                </Link>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </section>
