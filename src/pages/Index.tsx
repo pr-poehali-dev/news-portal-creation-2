@@ -63,7 +63,8 @@ const Index = () => {
         categoryLabel: item.category_label,
         time: item.time,
         image: item.image,
-        description: item.description
+        description: item.description,
+        source_url: item.source_url
       }));
       
       setNewsCategories(formattedCategories);

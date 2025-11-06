@@ -12,6 +12,8 @@ interface NewsItem {
   categoryLabel: string;
   time: string;
   image: string;
+  source_url?: string;
+  description?: string;
 }
 
 interface NewsSectionProps {
@@ -48,18 +50,24 @@ const NewsSection = ({ filteredNews, articleCategories, articles = [], pressRele
                     />
                   </div>
                   <div className="md:col-span-2 p-6">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <Badge variant="secondary">{news.categoryLabel}</Badge>
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Icon name="Clock" size={12} />
                         {news.time}
                       </span>
+                      {news.source_url && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Icon name="Globe" size={12} />
+                          {news.source_url.includes('globalmsk.ru') ? 'GlobalMsk.ru' : 'Источник'}
+                        </span>
+                      )}
                     </div>
                     <h3 className="text-xl font-semibold mb-3 hover:text-primary transition-colors">
                       {news.title}
                     </h3>
                     <p className="text-muted-foreground text-sm mb-4">
-                      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                      {news.description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'}
                     </p>
                     <Button variant="link" className="p-0">
                       Читать далее <Icon name="ArrowRight" size={16} className="ml-1" />

@@ -200,16 +200,25 @@ const NewsDetail = () => {
             )}
 
             {news.source_url && (
-              <div className="border-t pt-6 text-sm text-muted-foreground">
-                <a 
-                  href={news.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-primary"
-                >
-                  <Icon name="Link" size={16} />
-                  Источник: {news.source_url}
-                </a>
+              <div className="border-t pt-6">
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                    <Icon name="Info" size={16} />
+                    Материал основан на источнике:
+                  </p>
+                  <a 
+                    href={news.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-primary hover:underline font-medium"
+                  >
+                    <Icon name="ExternalLink" size={16} />
+                    {news.source_url.includes('globalmsk.ru') 
+                      ? 'GlobalMsk.ru' 
+                      : news.source_url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]
+                    }
+                  </a>
+                </div>
               </div>
             )}
           </div>

@@ -7,7 +7,7 @@ import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 
-const API_URL = 'https://functions.poehali.dev/d0b4ea43-ed3e-4e1c-9d9f-851adbff0718';
+const API_URL = 'https://functions.poehali.dev/2314879f-983a-4813-8c6b-2a8e19afe034';
 
 interface ImportedNews {
   title: string;
@@ -92,6 +92,7 @@ const NewsImporter = () => {
             source_url: news.source_url,
             time_label: news.time_label,
             category_code: news.category_code,
+            author: 'GlobalMsk.ru',
             moderation_status: 'published'
           })
         });

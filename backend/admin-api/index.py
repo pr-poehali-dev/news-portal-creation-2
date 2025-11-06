@@ -340,7 +340,8 @@ def import_globalmsk_news(limit: int = 20) -> Dict:
                         'time_label': time_label,
                         'category_code': 'imported',
                         'category_label': category,
-                        'content': f'<p>{description}</p>' if description else ''
+                        'content': f'<p>{description}</p>' if description else '',
+                        'author': 'GlobalMsk.ru'
                     })
                     
             except Exception:
@@ -362,7 +363,8 @@ def import_globalmsk_news(limit: int = 20) -> Dict:
                             'time_label': datetime.now().strftime('%d.%m.%Y %H:%M'),
                             'category_code': 'imported',
                             'category_label': 'Новости',
-                            'content': f'<p>{title}</p>'
+                            'content': f'<p>{title}</p>',
+                            'author': 'GlobalMsk.ru'
                         })
         
         return {
