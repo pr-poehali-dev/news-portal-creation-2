@@ -1,0 +1,20 @@
+{
+  "tests": [
+    {
+      "name": "Get news list",
+      "method": "GET",
+      "path": "/?resource=news",
+      "expectedStatus": 200,
+      "expectedBody": [],
+      "bodyMatcher": "type"
+    },
+    {
+      "name": "Get categories",
+      "method": "GET",
+      "path": "/?resource=categories",
+      "expectedStatus": 200,
+      "expectedBody": [],
+      "bodyMatcher": "type"
+    }
+  ]
+}

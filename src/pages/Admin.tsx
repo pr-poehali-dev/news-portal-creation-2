@@ -1,23 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
+import NewsList from '@/components/admin/NewsList';
+import NewsEditor from '@/components/admin/NewsEditor';
 
-const API_URL = 'https://functions.poehali.dev/d0b4ea43-ed3e-4e1c-9d9f-851adbff0718';
+const ADMIN_API_URL = 'https://functions.poehali.dev/2314879f-983a-4813-8c6b-2a8e19afe034';
 
-interface NewsItem {
+export interface NewsItem {
   id?: number;
   title: string;
   category_code: string;
   time_label: string;
   image_url: string;
   description?: string;
+  content?: string;
+  author?: string;
+  source_url?: string;
+  video_url?: string;
+  priority?: number;
+  views?: number;
+  moderation_status?: string;
+  published_date?: string;
+  seo_title?: string;
+  seo_description?: string;
+  seo_keywords?: string;
+  images?: Array<{ id?: number; image_url: string; caption: string; position: number }>;
+  links?: Array<{ id?: number; title: string; url: string; position: number }>;
+  tags?: string[];
 }
 
-interface Category {
+export interface Category {
   id?: number;
   code: string;
   label: string;
@@ -29,6 +44,8 @@ const Admin = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
+  const [isCreatingNews, setIsCreatingNews] = useState(false);
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('adminAuth') === 'true';
@@ -37,24 +54,6 @@ const Admin = () => {
     }
   }, [navigate]);
 
-  const [newNews, setNewNews] = useState<NewsItem>({
-    title: '',
-    category_code: 'politics',
-    time_label: 'Только что',
-    image_url: '',
-    description: ''
-  });
-
-  const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
-
-  const [newCategory, setNewCategory] = useState<Category>({
-    code: '',
-    label: '',
-    icon: 'Star'
-  });
-
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-
   useEffect(() => {
     loadData();
   }, []);
@@ -62,8 +61,8 @@ const Admin = () => {
   const loadData = async () => {
     try {
       const [newsRes, categoriesRes] = await Promise.all([
-        fetch(`${API_URL}?resource=news`),
-        fetch(`${API_URL}?resource=categories`)
+        fetch(`${ADMIN_API_URL}?resource=news`),
+        fetch(`${ADMIN_API_URL}?resource=categories`)
       ]);
       const newsData = await newsRes.json();
       const categoriesData = await categoriesRes.json();
@@ -76,49 +75,66 @@ const Admin = () => {
     }
   };
 
-  const handleAddNews = async () => {
+  const handleEditNews = async (id: number) => {
     try {
-      const response = await fetch(`${API_URL}?resource=news`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newNews)
-      });
-      if (response.ok) {
-        await loadData();
-        setNewNews({
-          title: '',
-          category_code: 'politics',
-          time_label: 'Только что',
-          image_url: '',
-          description: ''
-        });
-      }
+      const response = await fetch(`${ADMIN_API_URL}?resource=news&id=${id}`);
+      const newsDetail = await response.json();
+      setEditingNews(newsDetail);
+      setIsCreatingNews(false);
     } catch (error) {
-      console.error('Error adding news:', error);
+      console.error('Error loading news detail:', error);
     }
   };
 
-  const handleUpdateNews = async () => {
-    if (!editingNews || !editingNews.id) return;
+  const handleCreateNews = () => {
+    setEditingNews({
+      title: '',
+      category_code: categories[0]?.code || '',
+      time_label: 'Только что',
+      image_url: '',
+      description: '',
+      content: '',
+      author: '',
+      source_url: '',
+      video_url: '',
+      priority: 0,
+      moderation_status: 'published',
+      seo_title: '',
+      seo_description: '',
+      seo_keywords: '',
+      images: [],
+      links: [],
+      tags: []
+    });
+    setIsCreatingNews(true);
+  };
+
+  const handleSaveNews = async (newsData: NewsItem) => {
     try {
-      const response = await fetch(`${API_URL}?resource=news&id=${editingNews.id}`, {
-        method: 'PUT',
+      const url = isCreatingNews 
+        ? `${ADMIN_API_URL}?resource=news`
+        : `${ADMIN_API_URL}?resource=news&id=${newsData.id}`;
+      
+      const response = await fetch(url, {
+        method: isCreatingNews ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingNews)
+        body: JSON.stringify(newsData)
       });
+
       if (response.ok) {
         await loadData();
         setEditingNews(null);
+        setIsCreatingNews(false);
       }
     } catch (error) {
-      console.error('Error updating news:', error);
+      console.error('Error saving news:', error);
     }
   };
 
   const handleDeleteNews = async (id: number) => {
     if (!confirm('Удалить эту новость?')) return;
     try {
-      const response = await fetch(`${API_URL}?resource=news&id=${id}`, {
+      const response = await fetch(`${ADMIN_API_URL}?resource=news&id=${id}`, {
         method: 'DELETE'
       });
       if (response.ok) {
@@ -129,51 +145,9 @@ const Admin = () => {
     }
   };
 
-  const handleAddCategory = async () => {
-    try {
-      const response = await fetch(`${API_URL}?resource=categories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCategory)
-      });
-      if (response.ok) {
-        await loadData();
-        setNewCategory({ code: '', label: '', icon: 'Star' });
-      }
-    } catch (error) {
-      console.error('Error adding category:', error);
-    }
-  };
-
-  const handleUpdateCategory = async () => {
-    if (!editingCategory || !editingCategory.id) return;
-    try {
-      const response = await fetch(`${API_URL}?resource=categories&id=${editingCategory.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingCategory)
-      });
-      if (response.ok) {
-        await loadData();
-        setEditingCategory(null);
-      }
-    } catch (error) {
-      console.error('Error updating category:', error);
-    }
-  };
-
-  const handleDeleteCategory = async (id: number) => {
-    if (!confirm('Удалить эту категорию?')) return;
-    try {
-      const response = await fetch(`${API_URL}?resource=categories&id=${id}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        await loadData();
-      }
-    } catch (error) {
-      console.error('Error deleting category:', error);
-    }
+  const handleCancel = () => {
+    setEditingNews(null);
+    setIsCreatingNews(false);
   };
 
   if (loading) {
@@ -186,7 +160,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-muted/30 to-background">
-      <header className="bg-white border-b shadow-sm">
+      <header className="bg-white border-b shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Админ-панель NewsHub</h1>
@@ -211,194 +185,33 @@ const Admin = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="news">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="news">Управление новостями</TabsTrigger>
-            <TabsTrigger value="categories">Управление категориями</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="news">
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Добавить новость</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input
-                    placeholder="Заголовок новости"
-                    value={newNews.title}
-                    onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
-                  />
-                  <select
-                    className="w-full p-2 border rounded-md"
-                    value={newNews.category_code}
-                    onChange={(e) => setNewNews({ ...newNews, category_code: e.target.value })}
-                  >
-                    {categories.map(cat => (
-                      <option key={cat.code} value={cat.code}>{cat.label}</option>
-                    ))}
-                  </select>
-                  <Input
-                    placeholder="Время (например: 2 часа назад)"
-                    value={newNews.time_label}
-                    onChange={(e) => setNewNews({ ...newNews, time_label: e.target.value })}
-                  />
-                  <Input
-                    placeholder="URL изображения"
-                    value={newNews.image_url}
-                    onChange={(e) => setNewNews({ ...newNews, image_url: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Описание (необязательно)"
-                    value={newNews.description}
-                    onChange={(e) => setNewNews({ ...newNews, description: e.target.value })}
-                  />
-                  <Button onClick={handleAddNews} className="w-full">
-                    <Icon name="Plus" size={18} className="mr-2" />
-                    Добавить новость
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Список новостей ({news.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {news.map((item) => (
-                      <div key={item.id} className="p-4 border rounded-lg">
-                        {editingNews?.id === item.id ? (
-                          <div className="space-y-3">
-                            <Input
-                              value={editingNews.title}
-                              onChange={(e) => setEditingNews({ ...editingNews, title: e.target.value })}
-                            />
-                            <select
-                              className="w-full p-2 border rounded-md"
-                              value={editingNews.category_code}
-                              onChange={(e) => setEditingNews({ ...editingNews, category_code: e.target.value })}
-                            >
-                              {categories.map(cat => (
-                                <option key={cat.code} value={cat.code}>{cat.label}</option>
-                              ))}
-                            </select>
-                            <Input
-                              value={editingNews.time_label}
-                              onChange={(e) => setEditingNews({ ...editingNews, time_label: e.target.value })}
-                            />
-                            <Input
-                              value={editingNews.image_url}
-                              onChange={(e) => setEditingNews({ ...editingNews, image_url: e.target.value })}
-                            />
-                            <div className="flex gap-2">
-                              <Button onClick={handleUpdateNews} size="sm">Сохранить</Button>
-                              <Button onClick={() => setEditingNews(null)} variant="outline" size="sm">Отмена</Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <h3 className="font-semibold mb-2">{item.title}</h3>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              Категория: {categories.find(c => c.code === item.category_code)?.label} • {item.time_label}
-                            </p>
-                            <div className="flex gap-2">
-                              <Button onClick={() => setEditingNews(item)} size="sm" variant="outline">
-                                <Icon name="Edit" size={16} />
-                              </Button>
-                              <Button onClick={() => handleDeleteNews(item.id!)} size="sm" variant="destructive">
-                                <Icon name="Trash2" size={16} />
-                              </Button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="categories">
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Добавить категорию</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input
-                    placeholder="Код категории (английский, например: tech)"
-                    value={newCategory.code}
-                    onChange={(e) => setNewCategory({ ...newCategory, code: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Название категории (русский)"
-                    value={newCategory.label}
-                    onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Иконка (например: Star, Laptop)"
-                    value={newCategory.icon}
-                    onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
-                  />
-                  <Button onClick={handleAddCategory} className="w-full">
-                    <Icon name="Plus" size={18} className="mr-2" />
-                    Добавить категорию
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Список категорий ({categories.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {categories.map((item) => (
-                      <div key={item.id} className="p-4 border rounded-lg">
-                        {editingCategory?.id === item.id ? (
-                          <div className="space-y-3">
-                            <Input
-                              value={editingCategory.label}
-                              onChange={(e) => setEditingCategory({ ...editingCategory, label: e.target.value })}
-                            />
-                            <Input
-                              value={editingCategory.icon}
-                              onChange={(e) => setEditingCategory({ ...editingCategory, icon: e.target.value })}
-                            />
-                            <div className="flex gap-2">
-                              <Button onClick={handleUpdateCategory} size="sm">Сохранить</Button>
-                              <Button onClick={() => setEditingCategory(null)} variant="outline" size="sm">Отмена</Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-3 mb-3">
-                              <Icon name={item.icon as any} size={24} />
-                              <div>
-                                <h3 className="font-semibold">{item.label}</h3>
-                                <p className="text-sm text-muted-foreground">Код: {item.code}</p>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button onClick={() => setEditingCategory(item)} size="sm" variant="outline">
-                                <Icon name="Edit" size={16} />
-                              </Button>
-                              <Button onClick={() => handleDeleteCategory(item.id!)} size="sm" variant="destructive">
-                                <Icon name="Trash2" size={16} />
-                              </Button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+        {editingNews ? (
+          <NewsEditor
+            news={editingNews}
+            categories={categories}
+            isCreating={isCreatingNews}
+            onSave={handleSaveNews}
+            onCancel={handleCancel}
+          />
+        ) : (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Управление новостями</CardTitle>
+              <Button onClick={handleCreateNews}>
+                <Icon name="Plus" size={18} className="mr-2" />
+                Создать новость
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <NewsList
+                news={news}
+                categories={categories}
+                onEdit={handleEditNews}
+                onDelete={handleDeleteNews}
+              />
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
