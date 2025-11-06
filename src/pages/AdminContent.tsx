@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '@/components/AdminSidebar';
 import AIContentGenerator from '@/components/AIContentGenerator';
+import NewsImporter from '@/components/NewsImporter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -214,6 +215,7 @@ const AdminContent = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Управление контентом</h1>
             <div className="flex gap-2">
+              <NewsImporter />
               <Input
                 placeholder="Поиск по заголовку..."
                 value={searchQuery}

@@ -10,6 +10,9 @@ import os
 from typing import Dict, Any, List, Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
 
 def get_db_connection():
     dsn = os.environ.get('DATABASE_URL')
@@ -40,7 +43,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur = conn.cursor()
         
         if method == 'GET':
-            if resource == 'news':
+            if resource == 'import-news':
+                limit = int(params.get('limit', 20))
+                result = import_globalmsk_news(limit)
+            elif resource == 'news':
                 if news_id:
                     result = get_news_detail(cur, news_id)
                 else:
@@ -273,3 +279,100 @@ def create_category(conn, cur, data: Dict) -> Dict:
     cat_id = cur.fetchone()['id']
     conn.commit()
     return {'id': cat_id, 'success': True}
+
+def import_globalmsk_news(limit: int = 20) -> Dict:
+    '''
+    Import news from globalmsk.ru portal
+    '''
+    try:
+        url = 'https://www.globalmsk.ru/news'
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        news_list = []
+        
+        news_items = soup.find_all('div', class_='news-item', limit=limit)
+        if not news_items:
+            news_items = soup.find_all('article', limit=limit)
+        if not news_items:
+            news_items = soup.find_all('div', class_='item', limit=limit)
+        
+        for item in news_items:
+            try:
+                title_elem = item.find(['h2', 'h3', 'h4', 'a'])
+                if not title_elem:
+                    continue
+                    
+                title = title_elem.get_text(strip=True)
+                
+                link_elem = item.find('a', href=True)
+                link = link_elem['href'] if link_elem else ''
+                if link and not link.startswith('http'):
+                    link = f'https://www.globalmsk.ru{link}'
+                
+                img_elem = item.find('img')
+                image_url = ''
+                if img_elem:
+                    image_url = img_elem.get('src', '') or img_elem.get('data-src', '')
+                    if image_url and not image_url.startswith('http'):
+                        image_url = f'https://www.globalmsk.ru{image_url}'
+                
+                description_elem = item.find(['p', 'div'], class_=['description', 'excerpt', 'summary'])
+                description = description_elem.get_text(strip=True) if description_elem else ''
+                
+                time_elem = item.find(['time', 'span'], class_=['date', 'time', 'published'])
+                time_label = time_elem.get_text(strip=True) if time_elem else datetime.now().strftime('%d.%m.%Y %H:%M')
+                
+                category_elem = item.find(['span', 'a'], class_=['category', 'tag'])
+                category = category_elem.get_text(strip=True) if category_elem else 'Новости'
+                
+                if title:
+                    news_list.append({
+                        'title': title,
+                        'description': description[:500] if description else title[:200],
+                        'image_url': image_url,
+                        'source_url': link,
+                        'time_label': time_label,
+                        'category_code': 'imported',
+                        'category_label': category,
+                        'content': f'<p>{description}</p>' if description else ''
+                    })
+                    
+            except Exception:
+                continue
+        
+        if not news_list:
+            fallback_links = soup.find_all('a', href=True, limit=limit)
+            for link in fallback_links:
+                href = link['href']
+                if '/news/' in href and not any(x in href for x in ['#', 'javascript:', 'mailto:']):
+                    title = link.get_text(strip=True)
+                    if len(title) > 10:
+                        full_url = href if href.startswith('http') else f'https://www.globalmsk.ru{href}'
+                        news_list.append({
+                            'title': title,
+                            'description': title[:200],
+                            'image_url': '',
+                            'source_url': full_url,
+                            'time_label': datetime.now().strftime('%d.%m.%Y %H:%M'),
+                            'category_code': 'imported',
+                            'category_label': 'Новости',
+                            'content': f'<p>{title}</p>'
+                        })
+        
+        return {
+            'success': True,
+            'count': len(news_list[:limit]),
+            'news': news_list[:limit]
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e),
+            'news': []
+        }
