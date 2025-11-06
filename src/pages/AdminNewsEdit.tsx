@@ -9,6 +9,7 @@ import MainTab from '@/components/admin-news-edit/MainTab';
 import SeoTab from '@/components/admin-news-edit/SeoTab';
 import ImagesTab from '@/components/admin-news-edit/ImagesTab';
 import ExtraTab from '@/components/admin-news-edit/ExtraTab';
+import NewsPreviewDialog from '@/components/admin-news-edit/NewsPreviewDialog';
 
 const API_URL = 'https://functions.poehali.dev/d0b4ea43-ed3e-4e1c-9d9f-851adbff0718';
 
@@ -45,6 +46,7 @@ const AdminNewsEdit = () => {
   const isNew = id === 'new';
 
   const [loading, setLoading] = useState(!isNew);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [form, setForm] = useState<NewsForm>({
     title: '',
     text: '',
@@ -194,10 +196,20 @@ const AdminNewsEdit = () => {
                 {isNew ? 'Добавить новость' : 'Редактировать новость'}
               </h1>
             </div>
-            <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
-              <Icon name="Save" size={18} className="mr-2" />
-              Сохранить
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setPreviewOpen(true)}
+                className="border-primary text-primary hover:bg-primary hover:text-white"
+              >
+                <Icon name="Eye" size={18} className="mr-2" />
+                Предпросмотр
+              </Button>
+              <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
+                <Icon name="Save" size={18} className="mr-2" />
+                Сохранить
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -239,6 +251,14 @@ const AdminNewsEdit = () => {
           </Tabs>
 
           <div className="mt-6 flex gap-3 justify-end">
+            <Button 
+              variant="outline" 
+              onClick={() => setPreviewOpen(true)}
+              className="border-primary text-primary hover:bg-primary hover:text-white"
+            >
+              <Icon name="Eye" size={18} className="mr-2" />
+              Предпросмотр
+            </Button>
             <Button variant="outline" onClick={() => navigate('/admin/news')}>
               Отменить
             </Button>
@@ -249,6 +269,12 @@ const AdminNewsEdit = () => {
           </div>
         </main>
       </div>
+      
+      <NewsPreviewDialog 
+        open={previewOpen} 
+        onOpenChange={setPreviewOpen} 
+        form={form}
+      />
     </div>
   );
 };
