@@ -46,6 +46,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if resource == 'import-news':
                 limit = int(params.get('limit', 20))
                 result = import_globalmsk_news(limit)
+            elif resource == 'import-rss':
+                limit = int(params.get('limit', 20))
+                result = import_rss_feed(limit)
             elif resource == 'news':
                 if news_id:
                     result = get_news_detail(cur, news_id)
@@ -371,6 +374,87 @@ def import_globalmsk_news(limit: int = 20) -> Dict:
             'success': True,
             'count': len(news_list[:limit]),
             'news': news_list[:limit]
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e),
+            'news': []
+        }
+
+def import_rss_feed(limit: int = 20) -> Dict:
+    '''
+    Import news from GlobalMsk.ru RSS feed
+    '''
+    try:
+        from xml.etree import ElementTree as ET
+        
+        url = 'https://globalmsk.ru/dzen.php'
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        
+        root = ET.fromstring(response.content)
+        news_list = []
+        
+        for item in root.findall('.//item')[:limit]:
+            try:
+                title_elem = item.find('title')
+                link_elem = item.find('link')
+                description_elem = item.find('description')
+                pub_date_elem = item.find('pubDate')
+                category_elem = item.find('category')
+                
+                title = title_elem.text if title_elem is not None else ''
+                link = link_elem.text if link_elem is not None else ''
+                description = description_elem.text if description_elem is not None else ''
+                pub_date = pub_date_elem.text if pub_date_elem is not None else ''
+                category = category_elem.text if category_elem is not None else 'Новости'
+                
+                image_url = ''
+                enclosure = item.find('enclosure')
+                if enclosure is not None and enclosure.get('type', '').startswith('image'):
+                    image_url = enclosure.get('url', '')
+                
+                if not image_url:
+                    media_content = item.find('{http://search.yahoo.com/mrss/}content')
+                    if media_content is not None:
+                        image_url = media_content.get('url', '')
+                
+                try:
+                    if pub_date:
+                        from datetime import datetime
+                        dt = datetime.strptime(pub_date, '%a, %d %b %Y %H:%M:%S %z')
+                        time_label = dt.strftime('%d.%m.%Y %H:%M')
+                    else:
+                        time_label = datetime.now().strftime('%d.%m.%Y %H:%M')
+                except:
+                    time_label = datetime.now().strftime('%d.%m.%Y %H:%M')
+                
+                if title:
+                    clean_description = BeautifulSoup(description, 'html.parser').get_text()
+                    
+                    news_list.append({
+                        'title': title,
+                        'description': clean_description[:500] if clean_description else title[:200],
+                        'image_url': image_url,
+                        'source_url': link,
+                        'time_label': time_label,
+                        'category_code': 'imported',
+                        'category_label': category,
+                        'content': f'<p>{clean_description}</p>' if clean_description else '',
+                        'author': 'GlobalMsk.ru'
+                    })
+            except Exception:
+                continue
+        
+        return {
+            'success': True,
+            'count': len(news_list),
+            'news': news_list
         }
     except Exception as e:
         return {

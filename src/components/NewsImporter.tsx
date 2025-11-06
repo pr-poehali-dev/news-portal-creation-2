@@ -26,11 +26,13 @@ const NewsImporter = () => {
   const [importedNews, setImportedNews] = useState<ImportedNews[]>([]);
   const [selectedNews, setSelectedNews] = useState<Set<number>>(new Set());
   const [limit, setLimit] = useState(20);
+  const [source, setSource] = useState<'html' | 'rss'>('rss');
 
   const handleImport = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}?resource=import-news&limit=${limit}`);
+      const resource = source === 'rss' ? 'import-rss' : 'import-news';
+      const response = await fetch(`${API_URL}?resource=${resource}&limit=${limit}`);
       if (!response.ok) throw new Error('Ошибка импорта');
 
       const data = await response.json();
@@ -147,6 +149,17 @@ const NewsImporter = () => {
                 <p className="text-muted-foreground mb-4">
                   Загрузите новости с портала GlobalMsk.ru
                 </p>
+                <div className="flex items-center gap-4 justify-center mb-4">
+                  <label className="text-sm font-medium">Источник:</label>
+                  <select 
+                    value={source} 
+                    onChange={(e) => setSource(e.target.value as 'html' | 'rss')}
+                    className="border rounded px-3 py-2"
+                  >
+                    <option value="rss">RSS лента (dzen.php)</option>
+                    <option value="html">HTML страница</option>
+                  </select>
+                </div>
                 <div className="flex items-center gap-4 justify-center mb-4">
                   <label className="text-sm font-medium">Количество новостей:</label>
                   <Input
