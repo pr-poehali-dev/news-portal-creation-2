@@ -9,6 +9,7 @@ import Admin from "./pages/Admin";
 import AdminNews from "./pages/AdminNews";
 import AdminNewsEdit from "./pages/AdminNewsEdit";
 import Login from "./pages/Login";
+import NewsDetail from "./pages/NewsDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/news/:id" element={<NewsDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/news" element={<AdminNews />} />

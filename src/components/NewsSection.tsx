@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,35 +32,37 @@ const NewsSection = ({ filteredNews, articleCategories }: NewsSectionProps) => {
 
         <div className="grid gap-6">
           {filteredNews.map((news, idx) => (
-            <Card key={news.id} className="overflow-hidden hover:shadow-lg transition-shadow animate-fade-in" style={{ animationDelay: `${idx * 0.1}s` }}>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="md:col-span-1 h-48 md:h-auto">
-                  <img 
-                    src={news.image} 
-                    alt={news.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="md:col-span-2 p-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary">{news.categoryLabel}</Badge>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Icon name="Clock" size={12} />
-                      {news.time}
-                    </span>
+            <Link key={news.id} to={`/news/${news.id}`}>
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow animate-fade-in" style={{ animationDelay: `${idx * 0.1}s` }}>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="md:col-span-1 h-48 md:h-auto">
+                    <img 
+                      src={news.image} 
+                      alt={news.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 hover:text-primary transition-colors cursor-pointer">
-                    {news.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                  </p>
-                  <Button variant="link" className="p-0">
-                    Читать далее <Icon name="ArrowRight" size={16} className="ml-1" />
-                  </Button>
+                  <div className="md:col-span-2 p-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary">{news.categoryLabel}</Badge>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Icon name="Clock" size={12} />
+                        {news.time}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3 hover:text-primary transition-colors">
+                      {news.title}
+                    </h3>
+                    <p className="text-muted-foreground text-sm mb-4">
+                      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                    </p>
+                    <Button variant="link" className="p-0">
+                      Читать далее <Icon name="ArrowRight" size={16} className="ml-1" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
           ))}
         </div>
       </section>

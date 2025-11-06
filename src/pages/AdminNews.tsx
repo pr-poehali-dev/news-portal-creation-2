@@ -139,6 +139,9 @@ const AdminNews = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
                     <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
+                        <Icon name="GripVertical" size={16} className="text-gray-400" />
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Приоритет</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Изображение</th>
@@ -153,7 +156,10 @@ const AdminNews = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredNews.map((item, index) => (
-                      <tr key={item.id} className={index % 2 === 0 ? 'bg-green-50' : ''}>
+                      <tr key={item.id} className={`${index % 2 === 0 ? 'bg-green-50' : ''} hover:bg-blue-50 transition-colors cursor-move`}>
+                        <td className="px-4 py-4 whitespace-nowrap cursor-grab active:cursor-grabbing">
+                          <Icon name="GripVertical" size={18} className="text-gray-400" />
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">{item.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">70102</td>
                         <td className="px-6 py-4 whitespace-nowrap">
