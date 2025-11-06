@@ -18,20 +18,23 @@ const menuItems: MenuItem[] = [
     path: '/'
   },
   {
+    id: 'content',
+    label: 'Контент',
+    icon: 'FileEdit',
+    path: '/admin/content'
+  },
+  {
     id: 'references',
     label: 'Справочники',
     icon: 'BookOpen',
     path: '/admin/references',
     children: [
       { id: 'academy', label: 'Академия', icon: 'GraduationCap', path: '/admin/academy' },
-      { id: 'news', label: 'Новости', icon: 'Newspaper', path: '/admin/news' },
-      { id: 'press', label: 'Пресс-релизы', icon: 'FileText', path: '/admin/press' },
       { id: 'organizations', label: 'Организации', icon: 'Building2', path: '/admin/organizations' },
       { id: 'persons', label: 'Персоналии', icon: 'Users', path: '/admin/persons' },
       { id: 'vacancies', label: 'Вакансии', icon: 'Briefcase', path: '/admin/vacancies' },
       { id: 'regions', label: 'Регионы', icon: 'MapPin', path: '/admin/regions' },
       { id: 'advertising', label: 'Реклама', icon: 'Megaphone', path: '/admin/advertising' },
-      { id: 'horoscopes', label: 'Гороскопы', icon: 'Star', path: '/admin/horoscopes' },
       { id: 'centers', label: 'Центры', icon: 'Building', path: '/admin/centers' },
       { id: 'podcasts', label: 'Подкасты', icon: 'Mic', path: '/admin/podcasts' },
       { id: 'promotions', label: 'Промокоды', icon: 'Ticket', path: '/admin/promotions' },
