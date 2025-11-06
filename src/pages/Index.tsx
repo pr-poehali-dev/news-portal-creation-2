@@ -67,11 +67,11 @@ const Index = () => {
       
       setNewsCategories(formattedCategories);
       setAllNews(formattedNews);
-      setArticles(articlesData);
-      setPressReleases(pressData);
-      setHoroscopes(horoscopesData);
-      setBlogs(blogsData);
-      setBiographies(biographiesData);
+      setArticles(Array.isArray(articlesData) ? articlesData : []);
+      setPressReleases(Array.isArray(pressData) ? pressData : []);
+      setHoroscopes(Array.isArray(horoscopesData) ? horoscopesData : []);
+      setBlogs(Array.isArray(blogsData) ? blogsData : []);
+      setBiographies(Array.isArray(biographiesData) ? biographiesData : []);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {

@@ -24,7 +24,7 @@ interface NewsSectionProps {
   biographies: any[];
 }
 
-const NewsSection = ({ filteredNews, articleCategories, articles, pressReleases, horoscopes, blogs, biographies }: NewsSectionProps) => {
+const NewsSection = ({ filteredNews, articleCategories, articles = [], pressReleases = [], horoscopes = [], blogs = [], biographies = [] }: NewsSectionProps) => {
   return (
     <div className="lg:col-span-8 space-y-6">
       <section className="animate-fade-in">
