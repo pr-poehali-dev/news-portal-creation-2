@@ -54,12 +54,19 @@ const AdminContent = () => {
         fetch(`${API_URL}?resource=biographies`)
       ]);
 
-      setNews(await newsRes.json());
-      setArticles(await articlesRes.json());
-      setPressReleases(await pressRes.json());
-      setHoroscopes(await horoscopesRes.json());
-      setBlogs(await blogsRes.json());
-      setBiographies(await biographiesRes.json());
+      const newsData = newsRes.ok ? await newsRes.json() : [];
+      const articlesData = articlesRes.ok ? await articlesRes.json() : [];
+      const pressData = pressRes.ok ? await pressRes.json() : [];
+      const horoscopesData = horoscopesRes.ok ? await horoscopesRes.json() : [];
+      const blogsData = blogsRes.ok ? await blogsRes.json() : [];
+      const biographiesData = biographiesRes.ok ? await biographiesRes.json() : [];
+
+      setNews(Array.isArray(newsData) ? newsData : []);
+      setArticles(Array.isArray(articlesData) ? articlesData : []);
+      setPressReleases(Array.isArray(pressData) ? pressData : []);
+      setHoroscopes(Array.isArray(horoscopesData) ? horoscopesData : []);
+      setBlogs(Array.isArray(blogsData) ? blogsData : []);
+      setBiographies(Array.isArray(biographiesData) ? biographiesData : []);
     } catch (error) {
       console.error('Error loading content:', error);
       toast.error('Ошибка загрузки контента');
