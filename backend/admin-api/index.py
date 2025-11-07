@@ -68,6 +68,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 result = get_categories(cur)
             elif resource == 'stats':
                 result = get_stats(cur)
+            elif resource == 'banners':
+                placement = params.get('placement')
+                banner_id = params.get('id')
+                if banner_id:
+                    result = get_banner_detail(cur, banner_id)
+                else:
+                    result = get_banners_list(cur, placement)
             else:
                 result = {'error': 'Unknown resource'}
         
@@ -77,19 +84,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 result = create_news(conn, cur, body_data)
             elif resource == 'category':
                 result = create_category(conn, cur, body_data)
+            elif resource == 'banner':
+                result = create_banner(conn, cur, body_data)
             else:
                 result = {'error': 'Unknown resource'}
         
         elif method == 'PUT':
             body_data = json.loads(event.get('body', '{}'))
+            banner_id = params.get('id')
             if resource == 'news' and news_id:
                 result = update_news(conn, cur, news_id, body_data)
+            elif resource == 'banner' and banner_id:
+                result = update_banner(conn, cur, banner_id, body_data)
             else:
                 result = {'error': 'ID required for update'}
         
         elif method == 'DELETE':
+            banner_id = params.get('id')
             if resource == 'news' and news_id:
                 result = delete_news(conn, cur, news_id)
+            elif resource == 'banner' and banner_id:
+                result = delete_banner(conn, cur, banner_id)
             else:
                 result = {'error': 'ID required for delete'}
         
@@ -438,3 +453,79 @@ def import_rss_feed(conn, cur, limit: int = 20) -> List[Dict]:
     
     conn.commit()
     return imported_news
+
+def get_banners_list(cur, placement: str = None) -> List[Dict]:
+    where_clause = f"WHERE placement = {sql_escape(placement)}" if placement else ""
+    query = f"""
+        SELECT * FROM t_p58513026_news_portal_creation.banners
+        {where_clause}
+        ORDER BY priority DESC, id DESC
+    """
+    cur.execute(query)
+    return cur.fetchall()
+
+def get_banner_detail(cur, banner_id: str) -> Dict:
+    query = f"SELECT * FROM t_p58513026_news_portal_creation.banners WHERE id = {sql_escape(banner_id)}"
+    cur.execute(query)
+    banner = cur.fetchone()
+    return banner if banner else {'error': 'Banner not found'}
+
+def create_banner(conn, cur, data: Dict) -> Dict:
+    query = f"""
+        INSERT INTO t_p58513026_news_portal_creation.banners 
+        (placement, title, media_type, media_url, link_url, rsy_code, is_active, priority)
+        VALUES (
+            {sql_escape(data.get('placement', ''))},
+            {sql_escape(data.get('title', ''))},
+            {sql_escape(data.get('media_type', 'image'))},
+            {sql_escape(data.get('media_url', ''))},
+            {sql_escape(data.get('link_url', ''))},
+            {sql_escape(data.get('rsy_code', ''))},
+            {data.get('is_active', True)},
+            {data.get('priority', 0)}
+        )
+        RETURNING id
+    """
+    cur.execute(query)
+    banner_id = cur.fetchone()['id']
+    conn.commit()
+    return {'id': banner_id, 'success': True}
+
+def update_banner(conn, cur, banner_id: str, data: Dict) -> Dict:
+    fields = []
+    if 'placement' in data:
+        fields.append(f"placement = {sql_escape(data['placement'])}")
+    if 'title' in data:
+        fields.append(f"title = {sql_escape(data['title'])}")
+    if 'media_type' in data:
+        fields.append(f"media_type = {sql_escape(data['media_type'])}")
+    if 'media_url' in data:
+        fields.append(f"media_url = {sql_escape(data['media_url'])}")
+    if 'link_url' in data:
+        fields.append(f"link_url = {sql_escape(data['link_url'])}")
+    if 'rsy_code' in data:
+        fields.append(f"rsy_code = {sql_escape(data['rsy_code'])}")
+    if 'is_active' in data:
+        fields.append(f"is_active = {data['is_active']}")
+    if 'priority' in data:
+        fields.append(f"priority = {data['priority']}")
+    
+    fields.append("updated_at = NOW()")
+    
+    if not fields:
+        return {'error': 'No fields to update'}
+    
+    query = f"""
+        UPDATE t_p58513026_news_portal_creation.banners 
+        SET {', '.join(fields)}
+        WHERE id = {sql_escape(banner_id)}
+    """
+    cur.execute(query)
+    conn.commit()
+    return {'success': True}
+
+def delete_banner(conn, cur, banner_id: str) -> Dict:
+    query = f"DELETE FROM t_p58513026_news_portal_creation.banners WHERE id = {sql_escape(banner_id)}"
+    cur.execute(query)
+    conn.commit()
+    return {'success': True}

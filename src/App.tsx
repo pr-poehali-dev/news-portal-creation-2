@@ -20,6 +20,7 @@ import PressReleaseDetail from "./pages/PressReleaseDetail";
 import HoroscopeDetail from "./pages/HoroscopeDetail";
 import BlogDetail from "./pages/BlogDetail";
 import BiographyDetail from "./pages/BiographyDetail";
+import AdminAds from "./pages/AdminAds";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/admin/horoscopes/edit/:id" element={<AdminHoroscopesEdit />} />
           <Route path="/admin/blogs/edit/:id" element={<AdminBlogsEdit />} />
           <Route path="/admin/biographies/edit/:id" element={<AdminBiographiesEdit />} />
+          <Route path="/admin/ads" element={<AdminAds />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

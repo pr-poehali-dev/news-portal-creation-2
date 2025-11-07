@@ -165,6 +165,10 @@ const Admin = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Админ-панель NewsHub</h1>
             <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate('/admin/ads')}>
+                <Icon name="ImagePlus" size={18} className="mr-2" />
+                Реклама
+              </Button>
               <Button variant="outline" onClick={() => window.location.href = '/'}>
                 <Icon name="Home" size={18} className="mr-2" />
                 На главную
