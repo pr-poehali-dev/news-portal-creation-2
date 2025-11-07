@@ -7,16 +7,26 @@ Returns: HTTP response dict with statusCode, headers, body
 
 import json
 import os
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+import xml.etree.ElementTree as ET
 
 def get_db_connection():
     dsn = os.environ.get('DATABASE_URL')
     return psycopg2.connect(dsn, cursor_factory=RealDictCursor)
+
+def sql_escape(value: Any) -> str:
+    if value is None:
+        return 'NULL'
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, bool):
+        return 'true' if value else 'false'
+    return "'" + str(value).replace("'", "''") + "'"
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
@@ -45,10 +55,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'GET':
             if resource == 'import-news':
                 limit = int(params.get('limit', 20))
-                result = import_globalmsk_news(limit)
+                result = import_globalmsk_news(conn, cur, limit)
             elif resource == 'import-rss':
                 limit = int(params.get('limit', 20))
-                result = import_rss_feed(limit)
+                result = import_rss_feed(conn, cur, limit)
             elif resource == 'news':
                 if news_id:
                     result = get_news_detail(cur, news_id)
@@ -116,12 +126,10 @@ def get_news_list(cur, params: Dict) -> List[Dict]:
     limit = int(params.get('limit', 50))
     offset = int(params.get('offset', 0))
     
-    where_clauses = ["moderation_status = %s"]
-    query_params = [status]
+    where_clauses = [f"moderation_status = {sql_escape(status)}"]
     
     if category:
-        where_clauses.append("category_code = %s")
-        query_params.append(category)
+        where_clauses.append(f"category_code = {sql_escape(category)}")
     
     where_sql = " AND ".join(where_clauses)
     
@@ -131,41 +139,41 @@ def get_news_list(cur, params: Dict) -> List[Dict]:
         LEFT JOIN t_p58513026_news_portal_creation.categories c ON n.category_code = c.code
         WHERE {where_sql}
         ORDER BY n.published_date DESC, n.id DESC
-        LIMIT %s OFFSET %s
+        LIMIT {limit} OFFSET {offset}
     """
-    query_params.extend([limit, offset])
     
-    cur.execute(query, query_params)
+    cur.execute(query)
     return cur.fetchall()
 
 def get_news_detail(cur, news_id: str) -> Dict:
-    cur.execute("""
+    query = f"""
         SELECT n.*, c.label as category_label
         FROM t_p58513026_news_portal_creation.news n
         LEFT JOIN t_p58513026_news_portal_creation.categories c ON n.category_code = c.code
-        WHERE n.id = %s
-    """, (news_id,))
+        WHERE n.id = {sql_escape(news_id)}
+    """
+    cur.execute(query)
     news = cur.fetchone()
     
     if not news:
         return {'error': 'News not found'}
     
-    cur.execute("""
+    cur.execute(f"""
         SELECT * FROM t_p58513026_news_portal_creation.news_images
-        WHERE news_id = %s ORDER BY position
-    """, (news_id,))
+        WHERE news_id = {sql_escape(news_id)} ORDER BY position
+    """)
     news['images'] = cur.fetchall()
     
-    cur.execute("""
+    cur.execute(f"""
         SELECT * FROM t_p58513026_news_portal_creation.news_links
-        WHERE news_id = %s ORDER BY position
-    """, (news_id,))
+        WHERE news_id = {sql_escape(news_id)} ORDER BY position
+    """)
     news['links'] = cur.fetchall()
     
-    cur.execute("""
+    cur.execute(f"""
         SELECT tag FROM t_p58513026_news_portal_creation.news_tags
-        WHERE news_id = %s
-    """, (news_id,))
+        WHERE news_id = {sql_escape(news_id)}
+    """)
     news['tags'] = [row['tag'] for row in cur.fetchall()]
     
     return news
@@ -188,277 +196,245 @@ def get_stats(cur) -> Dict:
     return {'total': total, 'by_status': by_status}
 
 def create_news(conn, cur, data: Dict) -> Dict:
-    cur.execute("""
+    query = f"""
         INSERT INTO t_p58513026_news_portal_creation.news 
         (title, category_code, time_label, image_url, description, content, author, 
          source_url, video_url, priority, moderation_status, seo_title, seo_description, seo_keywords)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES (
+            {sql_escape(data.get('title', ''))},
+            {sql_escape(data.get('category_code', ''))},
+            {sql_escape(data.get('time_label', ''))},
+            {sql_escape(data.get('image_url', ''))},
+            {sql_escape(data.get('description', ''))},
+            {sql_escape(data.get('content', ''))},
+            {sql_escape(data.get('author', ''))},
+            {sql_escape(data.get('source_url', ''))},
+            {sql_escape(data.get('video_url', ''))},
+            {data.get('priority', 0)},
+            {sql_escape(data.get('moderation_status', 'published'))},
+            {sql_escape(data.get('seo_title', ''))},
+            {sql_escape(data.get('seo_description', ''))},
+            {sql_escape(data.get('seo_keywords', ''))}
+        )
         RETURNING id
-    """, (
-        data.get('title', ''),
-        data.get('category_code', ''),
-        data.get('time_label', ''),
-        data.get('image_url', ''),
-        data.get('description', ''),
-        data.get('content', ''),
-        data.get('author', ''),
-        data.get('source_url', ''),
-        data.get('video_url', ''),
-        data.get('priority', 0),
-        data.get('moderation_status', 'published'),
-        data.get('seo_title', ''),
-        data.get('seo_description', ''),
-        data.get('seo_keywords', '')
-    ))
+    """
+    cur.execute(query)
     news_id = cur.fetchone()['id']
     
     if data.get('images'):
         for idx, img in enumerate(data['images']):
-            cur.execute("""
+            cur.execute(f"""
                 INSERT INTO t_p58513026_news_portal_creation.news_images 
                 (news_id, image_url, caption, position)
-                VALUES (%s, %s, %s, %s)
-            """, (news_id, img.get('url', ''), img.get('caption', ''), idx))
+                VALUES ({news_id}, {sql_escape(img.get('url', ''))}, {sql_escape(img.get('caption', ''))}, {idx})
+            """)
     
     if data.get('links'):
         for idx, link in enumerate(data['links']):
-            cur.execute("""
+            cur.execute(f"""
                 INSERT INTO t_p58513026_news_portal_creation.news_links 
                 (news_id, title, url, position)
-                VALUES (%s, %s, %s, %s)
-            """, (news_id, link.get('title', ''), link.get('url', ''), idx))
+                VALUES ({news_id}, {sql_escape(link.get('title', ''))}, {sql_escape(link.get('url', ''))}, {idx})
+            """)
     
     if data.get('tags'):
         for tag in data['tags']:
-            cur.execute("""
+            cur.execute(f"""
                 INSERT INTO t_p58513026_news_portal_creation.news_tags (news_id, tag)
-                VALUES (%s, %s)
-            """, (news_id, tag))
+                VALUES ({news_id}, {sql_escape(tag)})
+            """)
     
     conn.commit()
     return {'id': news_id, 'success': True}
 
 def update_news(conn, cur, news_id: str, data: Dict) -> Dict:
-    cur.execute("""
-        UPDATE t_p58513026_news_portal_creation.news 
-        SET title = %s, category_code = %s, time_label = %s, image_url = %s,
-            description = %s, content = %s, author = %s, source_url = %s,
-            video_url = %s, priority = %s, moderation_status = %s,
-            seo_title = %s, seo_description = %s, seo_keywords = %s,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = %s
-    """, (
-        data.get('title', ''),
-        data.get('category_code', ''),
-        data.get('time_label', ''),
-        data.get('image_url', ''),
-        data.get('description', ''),
-        data.get('content', ''),
-        data.get('author', ''),
-        data.get('source_url', ''),
-        data.get('video_url', ''),
-        data.get('priority', 0),
-        data.get('moderation_status', 'published'),
-        data.get('seo_title', ''),
-        data.get('seo_description', ''),
-        data.get('seo_keywords', ''),
-        news_id
-    ))
+    fields = []
+    if 'title' in data:
+        fields.append(f"title = {sql_escape(data['title'])}")
+    if 'category_code' in data:
+        fields.append(f"category_code = {sql_escape(data['category_code'])}")
+    if 'time_label' in data:
+        fields.append(f"time_label = {sql_escape(data['time_label'])}")
+    if 'image_url' in data:
+        fields.append(f"image_url = {sql_escape(data['image_url'])}")
+    if 'description' in data:
+        fields.append(f"description = {sql_escape(data['description'])}")
+    if 'content' in data:
+        fields.append(f"content = {sql_escape(data['content'])}")
+    if 'author' in data:
+        fields.append(f"author = {sql_escape(data['author'])}")
+    if 'source_url' in data:
+        fields.append(f"source_url = {sql_escape(data['source_url'])}")
+    if 'video_url' in data:
+        fields.append(f"video_url = {sql_escape(data['video_url'])}")
+    if 'priority' in data:
+        fields.append(f"priority = {data['priority']}")
+    if 'moderation_status' in data:
+        fields.append(f"moderation_status = {sql_escape(data['moderation_status'])}")
+    if 'seo_title' in data:
+        fields.append(f"seo_title = {sql_escape(data['seo_title'])}")
+    if 'seo_description' in data:
+        fields.append(f"seo_description = {sql_escape(data['seo_description'])}")
+    if 'seo_keywords' in data:
+        fields.append(f"seo_keywords = {sql_escape(data['seo_keywords'])}")
     
+    fields.append("updated_at = NOW()")
+    
+    if not fields:
+        return {'error': 'No fields to update'}
+    
+    query = f"""
+        UPDATE t_p58513026_news_portal_creation.news 
+        SET {', '.join(fields)}
+        WHERE id = {sql_escape(news_id)}
+    """
+    cur.execute(query)
     conn.commit()
-    return {'id': news_id, 'success': True}
+    
+    return {'success': True}
 
 def delete_news(conn, cur, news_id: str) -> Dict:
-    cur.execute("UPDATE t_p58513026_news_portal_creation.news SET moderation_status = 'deleted' WHERE id = %s", (news_id,))
+    cur.execute(f"DELETE FROM t_p58513026_news_portal_creation.news_tags WHERE news_id = {sql_escape(news_id)}")
+    cur.execute(f"DELETE FROM t_p58513026_news_portal_creation.news_links WHERE news_id = {sql_escape(news_id)}")
+    cur.execute(f"DELETE FROM t_p58513026_news_portal_creation.news_images WHERE news_id = {sql_escape(news_id)}")
+    cur.execute(f"DELETE FROM t_p58513026_news_portal_creation.news WHERE id = {sql_escape(news_id)}")
     conn.commit()
+    
     return {'success': True}
 
 def create_category(conn, cur, data: Dict) -> Dict:
-    cur.execute("""
-        INSERT INTO t_p58513026_news_portal_creation.categories (code, label, icon)
-        VALUES (%s, %s, %s)
-        RETURNING id
-    """, (data.get('code', ''), data.get('label', ''), data.get('icon', '')))
-    cat_id = cur.fetchone()['id']
+    query = f"""
+        INSERT INTO t_p58513026_news_portal_creation.categories (code, label, color)
+        VALUES ({sql_escape(data.get('code', ''))}, {sql_escape(data.get('label', ''))}, {sql_escape(data.get('color', '#000000'))})
+        RETURNING code
+    """
+    cur.execute(query)
+    code = cur.fetchone()['code']
     conn.commit()
-    return {'id': cat_id, 'success': True}
+    
+    return {'code': code, 'success': True}
 
-def import_globalmsk_news(limit: int = 20) -> Dict:
-    '''
-    Import news from globalmsk.ru portal
-    '''
-    try:
-        url = 'https://www.globalmsk.ru/news'
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-        
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        
-        soup = BeautifulSoup(response.content, 'html.parser')
-        news_list = []
-        
-        news_items = soup.find_all('div', class_='news-item', limit=limit)
-        if not news_items:
-            news_items = soup.find_all('article', limit=limit)
-        if not news_items:
-            news_items = soup.find_all('div', class_='item', limit=limit)
-        
-        for item in news_items:
-            try:
-                title_elem = item.find(['h2', 'h3', 'h4', 'a'])
-                if not title_elem:
-                    continue
-                    
-                title = title_elem.get_text(strip=True)
-                
-                link_elem = item.find('a', href=True)
-                link = link_elem['href'] if link_elem else ''
-                if link and not link.startswith('http'):
-                    link = f'https://www.globalmsk.ru{link}'
-                
-                img_elem = item.find('img')
-                image_url = ''
-                if img_elem:
-                    image_url = img_elem.get('src', '') or img_elem.get('data-src', '')
-                    if image_url and not image_url.startswith('http'):
-                        image_url = f'https://www.globalmsk.ru{image_url}'
-                
-                description_elem = item.find(['p', 'div'], class_=['description', 'excerpt', 'summary'])
-                description = description_elem.get_text(strip=True) if description_elem else ''
-                
-                time_elem = item.find(['time', 'span'], class_=['date', 'time', 'published'])
-                time_label = time_elem.get_text(strip=True) if time_elem else datetime.now().strftime('%d.%m.%Y %H:%M')
-                
-                category_elem = item.find(['span', 'a'], class_=['category', 'tag'])
-                category = category_elem.get_text(strip=True) if category_elem else 'Новости'
-                
-                if title:
-                    news_list.append({
-                        'title': title,
-                        'description': description[:500] if description else title[:200],
-                        'image_url': image_url,
-                        'source_url': link,
-                        'time_label': time_label,
-                        'category_code': 'imported',
-                        'category_label': category,
-                        'content': f'<p>{description}</p>' if description else '',
-                        'author': 'GlobalMsk.ru'
-                    })
-                    
-            except Exception:
+def import_globalmsk_news(conn, cur, limit: int = 20) -> List[Dict]:
+    url = "https://www.globalmsk.ru/"
+    response = requests.get(url, timeout=10)
+    response.encoding = 'utf-8'
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    imported_news = []
+    news_items = soup.find_all('a', class_='news_roll_item', limit=limit)
+    
+    for item in news_items:
+        try:
+            source_url = 'https://www.globalmsk.ru' + item.get('href', '')
+            title_elem = item.find('div', class_='nr_title')
+            title = title_elem.text.strip() if title_elem else ''
+            
+            if not title:
                 continue
+            
+            query = f"SELECT COUNT(*) as count FROM t_p58513026_news_portal_creation.news WHERE source_url = {sql_escape(source_url)}"
+            cur.execute(query)
+            if cur.fetchone()['count'] > 0:
+                continue
+            
+            img_elem = item.find('img')
+            image_url = 'https://www.globalmsk.ru' + img_elem.get('src', '') if img_elem else ''
+            
+            time_elem = item.find('div', class_='nr_info_block_time')
+            time_label = time_elem.text.strip() if time_elem else 'Только что'
+            
+            cat_elem = item.find('a', class_='nr_info_block_rub')
+            category_code = cat_elem.get('href', '').split('/')[-1] if cat_elem else 'news'
+            
+            query = f"""
+                INSERT INTO t_p58513026_news_portal_creation.news 
+                (title, category_code, time_label, image_url, source_url, author, moderation_status)
+                VALUES (
+                    {sql_escape(title)},
+                    {sql_escape(category_code)},
+                    {sql_escape(time_label)},
+                    {sql_escape(image_url)},
+                    {sql_escape(source_url)},
+                    'GlobalMsk.ru',
+                    'draft'
+                )
+                RETURNING id, title, category_code, time_label, image_url
+            """
+            cur.execute(query)
+            result = cur.fetchone()
+            imported_news.append(dict(result))
         
-        if not news_list:
-            fallback_links = soup.find_all('a', href=True, limit=limit)
-            for link in fallback_links:
-                href = link['href']
-                if '/news/' in href and not any(x in href for x in ['#', 'javascript:', 'mailto:']):
-                    title = link.get_text(strip=True)
-                    if len(title) > 10:
-                        full_url = href if href.startswith('http') else f'https://www.globalmsk.ru{href}'
-                        news_list.append({
-                            'title': title,
-                            'description': title[:200],
-                            'image_url': '',
-                            'source_url': full_url,
-                            'time_label': datetime.now().strftime('%d.%m.%Y %H:%M'),
-                            'category_code': 'imported',
-                            'category_label': 'Новости',
-                            'content': f'<p>{title}</p>',
-                            'author': 'GlobalMsk.ru'
-                        })
-        
-        return {
-            'success': True,
-            'count': len(news_list[:limit]),
-            'news': news_list[:limit]
-        }
-    except Exception as e:
-        return {
-            'success': False,
-            'error': str(e),
-            'news': []
-        }
+        except Exception as e:
+            print(f"Error importing news: {e}")
+            continue
+    
+    conn.commit()
+    return imported_news
 
-def import_rss_feed(limit: int = 20) -> Dict:
-    '''
-    Import news from GlobalMsk.ru RSS feed
-    '''
+def import_rss_feed(conn, cur, limit: int = 20) -> List[Dict]:
+    rss_url = "https://globalmsk.ru/dzen.php"
+    response = requests.get(rss_url, timeout=10)
+    response.encoding = 'utf-8'
+    
     try:
-        from xml.etree import ElementTree as ET
-        
-        url = 'https://globalmsk.ru/dzen.php'
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-        
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        
         root = ET.fromstring(response.content)
-        news_list = []
-        
-        for item in root.findall('.//item')[:limit]:
-            try:
-                title_elem = item.find('title')
-                link_elem = item.find('link')
-                description_elem = item.find('description')
-                pub_date_elem = item.find('pubDate')
-                category_elem = item.find('category')
-                
-                title = title_elem.text if title_elem is not None else ''
-                link = link_elem.text if link_elem is not None else ''
-                description = description_elem.text if description_elem is not None else ''
-                pub_date = pub_date_elem.text if pub_date_elem is not None else ''
-                category = category_elem.text if category_elem is not None else 'Новости'
-                
-                image_url = ''
+    except:
+        root = ET.fromstring(response.text.encode('utf-8'))
+    
+    imported_news = []
+    items = root.findall('.//item')[:limit]
+    
+    for item in items:
+        try:
+            title = item.find('title').text if item.find('title') is not None else ''
+            source_url = item.find('link').text if item.find('link') is not None else ''
+            description = item.find('description').text if item.find('description') is not None else ''
+            pub_date = item.find('pubDate').text if item.find('pubDate') is not None else ''
+            
+            media_ns = '{http://search.yahoo.com/mrss/}'
+            media_content = item.find(f'{media_ns}content')
+            image_url = ''
+            if media_content is not None:
+                image_url = media_content.get('url', '')
+            
+            if not image_url:
                 enclosure = item.find('enclosure')
                 if enclosure is not None and enclosure.get('type', '').startswith('image'):
                     image_url = enclosure.get('url', '')
-                
-                if not image_url:
-                    media_content = item.find('{http://search.yahoo.com/mrss/}content')
-                    if media_content is not None:
-                        image_url = media_content.get('url', '')
-                
-                try:
-                    if pub_date:
-                        from datetime import datetime
-                        dt = datetime.strptime(pub_date, '%a, %d %b %Y %H:%M:%S %z')
-                        time_label = dt.strftime('%d.%m.%Y %H:%M')
-                    else:
-                        time_label = datetime.now().strftime('%d.%m.%Y %H:%M')
-                except:
-                    time_label = datetime.now().strftime('%d.%m.%Y %H:%M')
-                
-                if title:
-                    clean_description = BeautifulSoup(description, 'html.parser').get_text()
-                    
-                    news_list.append({
-                        'title': title,
-                        'description': clean_description[:500] if clean_description else title[:200],
-                        'image_url': image_url,
-                        'source_url': link,
-                        'time_label': time_label,
-                        'category_code': 'imported',
-                        'category_label': category,
-                        'content': f'<p>{clean_description}</p>' if clean_description else '',
-                        'author': 'GlobalMsk.ru'
-                    })
-            except Exception:
+            
+            author_elem = item.find('author')
+            author = author_elem.text if author_elem is not None else 'GlobalMsk.ru'
+            
+            if not title or not source_url:
                 continue
+            
+            query = f"SELECT COUNT(*) as count FROM t_p58513026_news_portal_creation.news WHERE source_url = {sql_escape(source_url)}"
+            cur.execute(query)
+            if cur.fetchone()['count'] > 0:
+                continue
+            
+            query = f"""
+                INSERT INTO t_p58513026_news_portal_creation.news 
+                (title, description, image_url, source_url, author, time_label, category_code, moderation_status)
+                VALUES (
+                    {sql_escape(title)},
+                    {sql_escape(description)},
+                    {sql_escape(image_url)},
+                    {sql_escape(source_url)},
+                    {sql_escape(author)},
+                    'Только что',
+                    'news',
+                    'draft'
+                )
+                RETURNING id, title, description, image_url, source_url
+            """
+            cur.execute(query)
+            result = cur.fetchone()
+            imported_news.append(dict(result))
         
-        return {
-            'success': True,
-            'count': len(news_list),
-            'news': news_list
-        }
-    except Exception as e:
-        return {
-            'success': False,
-            'error': str(e),
-            'news': []
-        }
+        except Exception as e:
+            print(f"Error importing RSS item: {e}")
+            continue
+    
+    conn.commit()
+    return imported_news
